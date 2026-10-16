@@ -1,0 +1,55 @@
+.period-filter{min-width:0}
+.period-trigger{width:100%;height:42px;display:flex;align-items:center;gap:10px;padding:0 12px;border:1px solid #cbd8d0;border-radius:6px;background:#fff;color:#253f34;font-size:12px;font-weight:600;text-align:left;font-variant-numeric:tabular-nums}
+.period-trigger>span{flex:1;white-space:nowrap}.period-trigger svg{flex-shrink:0;color:#557765}.period-trigger:hover{border-color:#658c77;background:#f8fbf9}.period-trigger[aria-expanded=true]{border-color:var(--green);box-shadow:0 0 0 2px #22564712}
+.period-dialog{width:650px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 32px);border:1px solid #cedbd2;border-radius:14px;padding:0;box-shadow:0 24px 80px #112e2433;overflow:auto}
+.period-dialog::backdrop{background:#18382c55}
+.period-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:24px 24px 20px;border-bottom:1px solid var(--border)}
+.period-heading h2{font-size:20px;letter-spacing:-.4px}.period-heading p{font-size:12px;color:#5f7066;margin:7px 0 0;line-height:1.5}.period-heading .close{width:36px;height:36px;border-radius:7px}
+.period-body{display:grid;grid-template-columns:185px minmax(0,1fr)}
+.period-presets{background:#f6f8f6;padding:24px 12px;border-right:1px solid var(--border)}
+.period-presets>span{display:block;color:#526b5b;font-size:9px;font-weight:800;letter-spacing:1px;padding:0 10px 14px}
+.period-presets button{display:block;width:100%;min-height:42px;border:1px solid transparent;background:transparent;text-align:left;color:#354e41;padding:10px;border-radius:6px;font-size:12px;margin-bottom:4px}
+.period-presets button:hover{background:#eaf0ec}.period-presets button[aria-pressed=true]{background:#e2eee6;border-color:#b5cebe;color:#1a5239;font-weight:700}
+.period-presets p{margin:22px 10px 0;color:#617268;font-size:11px;line-height:1.6}
+.period-calendar{padding:20px 24px 16px;min-width:0}
+.period-fields{display:flex;align-items:center;gap:10px;margin-bottom:18px}.period-fields>span{padding-top:21px;color:#75877c}
+.period-fields label{flex:1;min-width:0;font-size:11px;font-weight:700;color:#566c5e}
+.period-fields input{display:block;width:100%;min-width:0;height:40px;margin-top:7px;border:1px solid #cbd8d0;border-radius:6px;background:#fff;color:#2e493a;padding:0 10px;font-size:13px;font-variant-numeric:tabular-nums}
+.period-fields input[aria-invalid=true]{border-color:#a94c35}.period-fields input::placeholder{color:#687a6e;font-size:11px}
+.calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.calendar-nav h3{font-size:14px;font-weight:750;text-transform:capitalize;margin:0}.calendar-nav button{width:36px;height:36px;border:1px solid #dce5df;border-radius:6px;background:white;color:#355b46;font-size:25px;line-height:1}
+.calendar-nav button:hover:not(:disabled){background:#edf4ef}.calendar-nav button:disabled{cursor:default;opacity:.35}
+.period-dialog .calendar-grid{width:100%;min-width:0;table-layout:fixed;border-collapse:separate;border-spacing:0 3px;font-size:12px}
+.calendar-grid thead th{position:static;border:0;background:transparent;padding:4px 0 8px;text-align:center;color:#62776a;font-size:11px;font-weight:600;line-height:1.4}
+.calendar-grid tbody td{padding:0;border:0;text-align:center;height:38px;line-height:1;background:transparent}
+.calendar-grid button{display:block;width:100%;height:36px;border:1px solid transparent;border-radius:6px;background:transparent;color:#294635;font-size:12px;position:relative;font-variant-numeric:tabular-nums}
+.calendar-grid button:hover:not(:disabled){background:#d9e9de;border-color:#a6c2b0}.calendar-grid button.other-month{color:#64796b}
+.calendar-grid td.in-range{background:#e8f1eb}.calendar-grid td.range-start{border-radius:6px 0 0 6px}.calendar-grid td.range-end{border-radius:0 6px 6px 0}.calendar-grid td.range-start.range-end{border-radius:6px}
+.calendar-grid button.range-endpoint{background:#225647;color:#fff;font-weight:800;border-color:#225647}.calendar-grid button.range-endpoint:hover:not(:disabled){background:#173f35;color:#fff}
+.calendar-grid button[aria-current=date]::after{content:'';position:absolute;bottom:3px;left:calc(50% - 2px);width:4px;height:4px;background:currentColor;border-radius:50%}
+.calendar-grid button:disabled{opacity:1;color:#a9b3ac;cursor:default}.calendar-grid button:focus-visible{outline:2px solid #173f35;outline-offset:2px;z-index:1}
+.calendar-instruction{font-size:11px;color:#45624f;line-height:1.6;min-height:35px;margin:12px 0 5px}.calendar-keyboard{font-size:10px;color:#617367;line-height:1.5;margin:0}
+.period-footer{padding:16px 24px;border-top:1px solid var(--border);background:#fafcfb}.period-footer>p{font-size:12px;line-height:1.5;margin:0 0 12px;color:#385742;font-variant-numeric:tabular-nums}.period-footer>p.period-error{color:#a03b29;font-weight:600}.period-footer>div{display:flex;justify-content:flex-end;gap:10px}
+.period-cancel,.period-apply{min-height:40px;padding:0 18px;border-radius:6px;font-size:12px;font-weight:700}.period-cancel{border:1px solid #cbd8d0;background:white;color:#395743}.period-apply{border:1px solid #225647;background:#225647;color:#fff}.period-apply:hover:not(:disabled){background:#173f35}.period-apply:disabled{background:#e7ece8;color:#5a6a5f;border-color:#d8e1da;cursor:not-allowed;opacity:1}
+@media(max-width:600px){.period-dialog{width:420px}.period-heading{padding:18px 18px 14px}.period-heading h2{font-size:18px}.period-heading p{font-size:11px}.period-body{grid-template-columns:1fr}.period-presets{border-right:0;border-bottom:1px solid var(--border);padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px}.period-presets>span,.period-presets p{display:none}.period-presets button{margin:0;min-height:36px;padding:8px 10px;font-size:11px}.period-calendar{padding:16px 18px}.period-fields{margin-bottom:12px}.period-footer{padding:14px 18px}.calendar-instruction{min-height:0;margin-top:8px}.calendar-grid tbody td{height:36px}.calendar-grid button{height:34px}.period-trigger{font-size:12px}}
+@media(forced-colors:active){.calendar-grid td.in-range{outline:1px solid Highlight}.calendar-grid button.range-endpoint{border:2px solid Highlight}.calendar-grid button:disabled{color:GrayText}.period-presets button[aria-pressed=true]{border:2px solid Highlight}}
+
+.period-fields input:focus-visible{border-color:#225647;outline:2px solid #225647;outline-offset:-2px;box-shadow:none}
+.period-fields input[aria-invalid=true]:focus-visible{border-color:#a94c35;outline-color:#a94c35}
+
+/* Compact, non-modal calendar anchored to the period control. */
+.period-dialog{position:fixed;inset:auto;margin:0;width:352px;max-width:calc(100vw - 24px);background:#fff;color:#253b34;border-radius:9px;box-shadow:0 10px 30px #183b2c26;overscroll-behavior:contain}
+.period-dialog::backdrop{background:transparent;pointer-events:none}
+.period-heading{padding:12px 14px 10px;align-items:center;gap:8px}.period-heading h2{font-size:15px;letter-spacing:0}.period-heading p{font-size:10px;margin-top:4px}.period-heading .close{width:28px;height:28px;border-radius:5px}
+.period-body{display:block}.period-presets{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:8px 10px;border-right:0;border-bottom:1px solid var(--border)}.period-presets>span,.period-presets p{display:none}.period-presets button{margin:0;min-height:28px;padding:5px 8px;font-size:11px}
+.period-calendar{padding:10px 14px}.period-fields{gap:8px;margin-bottom:10px}.period-fields label{font-size:10px}.period-fields input{height:34px;margin-top:5px;font-size:12px;padding:0 8px}.period-fields>span{padding-top:18px}
+.calendar-nav{margin-bottom:5px}.calendar-nav h3{font-size:13px}.calendar-nav button{width:28px;height:28px;font-size:22px}
+.period-dialog .calendar-grid{border-spacing:0 2px}.calendar-grid thead th{padding:3px 0 5px;font-size:10px}.calendar-grid tbody td{height:29px}.calendar-grid button{height:29px;font-size:11px;border-radius:4px}
+.calendar-instruction{font-size:10px;line-height:1.4;min-height:28px;margin:7px 0 4px}.calendar-keyboard{font-size:9px;line-height:1.4}.period-footer{padding:9px 14px}.period-footer>p{font-size:11px;margin-bottom:8px}.period-footer>div{gap:8px}.period-cancel,.period-apply{min-height:32px;padding:0 12px;font-size:11px}
+.period-dialog .period-presets{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}.period-dialog .period-presets button{text-align:center;padding:5px 3px;font-size:10px}.period-dialog .period-heading{padding-top:9px;padding-bottom:8px}.period-dialog .calendar-instruction{min-height:14px}
+
+.period-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:10px;border-bottom:1px solid var(--border);background:#f6f8f6}
+.period-modes button{border:1px solid transparent;background:transparent;border-radius:5px;min-height:32px;font-size:11px;color:#45614f;padding:5px 4px}
+.period-modes button[aria-selected=true]{border-color:#b5cebe;background:#e2eee6;color:#1a5239;font-weight:700}
+.period-quick-summary{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 12px;color:#45614f;font-size:12px}.period-quick-summary svg{width:24px;height:24px}.period-quick-summary span{font-size:12px;font-variant-numeric:tabular-nums}
+.period-choice-panel{padding:12px 14px}.period-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.period-options.quarters{grid-template-columns:1fr 1fr}
+.period-options button{min-height:40px;padding:8px 4px;border:1px solid #d8e3dc;border-radius:5px;background:white;color:#355844;font-size:12px;text-transform:capitalize}.period-options button[aria-pressed=true]{border-color:#225647;background:#e2eee6;font-weight:700}.period-options button:hover:not(:disabled){background:#edf4ef}.period-options button:disabled{opacity:.45;cursor:not-allowed}.period-options small{display:block;margin-top:5px;font-size:9px;font-weight:400;line-height:1.5}

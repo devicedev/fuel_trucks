@@ -1,0 +1,11 @@
+export type RecipientComparison={id:string;recipient_id:string|null;recipient:string;status:string;onec_names:string[];wialon_names:string[];onec_liters:string|null;wialon_liters:string|null;difference:string|null;onec_count:number;wialon_count:number};
+const formatter=new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const liters=(value:string|null)=>value===null?'—':formatter.format(Number(value));
+export function RecipientComparisons({rows}:{rows:RecipientComparison[]|undefined}){
+  if(!rows)return <p className="recipient-unavailable">Сопоставление недоступно. Обновите отчёт и справочники.</p>;
+  if(!rows.length)return <p className="recipient-note">Выдач получателям за этот день нет.</p>;
+  const unmatched=rows.filter(row=>row.status!=='matched').length;
+  return <><p className="recipient-note">Объёмы сгруппированы по получателю за день и выбранный источник выдачи. {unmatched?`Без подтверждённой связи: ${unmatched}. Для этих строк разница не рассчитывается.`:'Все получатели сопоставлены.'}</p>
+    <div className="detail-scroll recipient-comparison"><table><thead><tr><th>Получатель 1С</th><th>Карточка Wialon</th><th className="number">1С, л</th><th className="number">Wialon, л</th><th className="number">Разница, л</th><th>Сопоставление</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className={row.difference!==null&&Number(row.difference)!==0?'recipient-mismatch':''}><td className="recipient-name">{row.onec_names.join(' / ')||row.recipient||'—'}{row.onec_count>1&&<small>Выдач 1С: {row.onec_count}</small>}</td><td className="recipient-name">{row.wialon_names.join(' / ')||'—'}{row.wialon_count>1&&<small>Выдач Wialon: {row.wialon_count}</small>}</td><td className="number">{liters(row.onec_liters)}</td><td className="number">{liters(row.wialon_liters)}</td><td className="number">{row.difference!==null&&Number(row.difference)>0?'+':''}{liters(row.difference)}</td><td><span className={`recipient-state ${row.status==='matched'?'matched':''}`}>{row.status==='matched'?'Связь подтверждена':row.status==='onec_only'?'Только 1С':'Нет связи'}</span></td></tr>)}</tbody></table></div>
+    <p className="recipient-note">Выдачи без карточки и неподтверждённые соответствия сохранены в таблице. Прочерк в разнице означает, что надёжная сверка недоступна.</p></>;
+}
