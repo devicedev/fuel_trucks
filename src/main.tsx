@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import type {MouseEvent as ReactMouseEvent,PointerEvent as ReactPointerEvent} from 'react';
 import './style.css';
 import {PeriodPicker} from './PeriodPicker';
+import {ExportDialog} from './ExportDialog';
 import {moscowToday, periodError} from './dates';
 import {availableSources, retainAvailable} from './source-filters';
 import type {SourceOption} from './source-filters';
@@ -50,7 +51,7 @@ function App(){
   const [farms,setFarms]=useState<string[]>(initialFilters.current.farms);const [trucks,setTrucks]=useState<string[]>(initialFilters.current.sources);
   const [mode,setMode]=useState<'truck'|'warehouse'|'all'>(initialFilters.current.mode);
   const [mappingOpen,setMappingOpen]=useState(false);
-  const [exporting,setExporting]=useState(false);const [exportError,setExportError]=useState('');
+  const [exporting,setExporting]=useState(false);const [exportOpen,setExportOpen]=useState(false);
   const [report,setReport]=useState<Report|null>(null);const [loading,setLoading]=useState(false);const [error,setError]=useState('');const [selected,setSelected]=useState<Row|null>(null);
   const [detailSource,setDetailSource]=useState<'onec'|'wialon'|'comparison'>('comparison');
   const showDetails=(row:Row)=>{setDetailSource('comparison');setSelected(row);};
@@ -58,7 +59,7 @@ function App(){
   async function load(queryFrom=from,queryTo=to){
     const validation=periodError(queryFrom,queryTo);if(validation){setError(validation);return;}
     active.current?.abort();const controller=new AbortController();active.current=controller;const id=++sequence.current;
-    setLoading(true);setError('');setExportError('');setReport(null);
+    setLoading(true);setError('');setReport(null);
     try{const response=await fetch(`/api/fuel-trucks/v1/report?${new URLSearchParams({from:queryFrom,to:queryTo})}`,{signal:controller.signal,cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.message||'Не удалось загрузить отчёт');if(id===sequence.current){setReport(data);setTrucks(previous=>resolveUrlSources(previous,data.trucks));}}
     catch(e){if(id===sequence.current&&!(e instanceof DOMException&&e.name==='AbortError'))setError(e instanceof Error?e.message:'Ошибка соединения');}
     finally{if(id===sequence.current)setLoading(false);}
@@ -73,28 +74,6 @@ function App(){
   const rows=useMemo(()=>modeRows.filter(r=>(!farms.length||r.farms.some(f=>farms.includes(f)))&&(!trucks.length||trucks.includes(r.truck_id))),[modeRows,farms,trucks]);
   const sum=(key:'meter_liters'|'onec_liters'|'difference')=>{const values=rows.map(r=>r[key]).filter(v=>v!==null);return values.length?values.reduce((a,v)=>a+Number(v),0):null;};
 
-  async function exportExcel(){
-    if(!report||loading||exporting||!rows.length)return;
-    const exportStarted=performance.now();
-    setExporting(true);setExportError('');
-    try{
-      const response=await fetch('/api/fuel-trucks/v1/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        from:report.from,to:report.to,mode,farms,source_ids:trucks,
-        source_names:trucks.map(id=>report.trucks.find(source=>source.id===id)?.name??id),
-        loaded_at:report.loaded_at,errors:report.errors,
-        rows:rows.map(row=>({date:row.date,farm:row.farm,farms:row.farms,truck_id:row.truck_id,truck:row.truck,
-          source_kind:row.source_kind,count:row.count,meter_liters:row.meter_liters,onec_liters:row.onec_liters,
-          difference:row.difference,entered_count:enteredDocuments(row.details).count,mapped:row.mapped,
-          details:row.details,wialon_details:row.wialon_details??[],recipient_comparisons:row.recipient_comparisons})),
-      })});
-      if(!response.ok){const data=await response.json().catch(()=>null);throw new Error(data?.message||'Не удалось сформировать Excel. Повторите выгрузку.');}
-      const url=URL.createObjectURL(await response.blob());
-      const anchor=document.createElement('a');anchor.href=url;anchor.download=`fuel-trucks_${report.from}_${report.to}.xlsx`;
-      document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-    }catch(error){setExportError(error instanceof Error?error.message:'Ошибка выгрузки Excel');}
-    finally{const remaining=1500-(performance.now()-exportStarted);if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));setExporting(false);}
-  }
-
   return <><header className="topbar"><nav className="header-navigation" aria-label="Основная навигация"><a className="brand" href="/fuel-trucks/"><span className="brand-symbol"><Icon type="truck"/></span>DBAnalit<span className="brand-divider">/</span><span className="section-name">Бензовозы</span></a><a className="home-link" href="/hub">Главная</a></nav><span className="top-caption">Контроль топлива</span></header>
   <main id="main-content" tabIndex={-1}><h1 className="sr-only">Бензовозы — выдача топлива</h1>
   <p className="sr-only" role="status">{loading?'Загрузка отчёта':report?`Отчёт загружен. Строк: ${rows.length}`:''}</p>
@@ -102,14 +81,13 @@ function App(){
     <PeriodPicker from={from} to={to} onApply={(a,b)=>{setFrom(a);setTo(b);void load(a,b);}}/>
     <MultiSelect label="Хозяйство" allLabel="Все хозяйства" options={modeFarms.map(f=>({id:f,name:f}))} selected={farms} setSelected={changeFarms}/>
     <MultiSelect label="Источник выдачи" allLabel={mode==='truck'?'Все бензовозы':mode==='warehouse'?'Все склады / АЗС':'Все источники'} options={modeSources} selected={trucks} setSelected={setTrucks}/>
-    <button className="refresh" type="button" onClick={()=>void exportExcel()} disabled={loading||!report||!rows.length} aria-disabled={exporting||undefined} aria-busy={exporting} title={!loading&&!rows.length?'Нет строк для выгрузки':'Скачать выбранный период с текущими фильтрами'}>{exporting?<svg className="export-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" opacity=".3"/><path d="M12 4a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>:<Icon type="download"/>}Выгрузить Excel</button>
+    <button className="refresh" type="button" onClick={()=>setExportOpen(true)} aria-busy={exporting} title="Выгрузить выбранный период, год или всё время">{exporting?<svg className="export-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" opacity=".3"/><path d="M12 4a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>:<Icon type="download"/>}{exporting?'Excel готовится…':'Выгрузить Excel'}</button>
   </form>
   <div className="source-modes" role="group" aria-label="Тип источника выдачи">
     {([['all','Все'],['truck','Бензовозы'],['warehouse','Склады / АЗС']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>{setMode(value);setTrucks([]);}}>{label}</button>)}
     <span>{mode==='warehouse'?'Выдача со складов по данным 1С':mode==='all'?'Бензовозы и стационарные источники выдачи':'Сверка выдачи бензовозов с Wialon'}</span>
     <button type="button" className="mapping-button" onClick={()=>setMappingOpen(true)}>Сопоставление</button>
   </div>
-  {exportError&&<div className="error" role="alert"><strong>Не удалось выгрузить Excel</strong><p>{exportError}</p></div>}
   {error&&<div className="error" role="alert"><strong>Не удалось загрузить данные</strong><p>{error}</p><button onClick={()=>void load()}>Повторить</button></div>}
   {!!report?.errors.length&&<div className="warning" role="alert"><strong>Отчёт загружен частично</strong><p>{report.errors.join(' ')}</p><span>Недоступные значения отмечены прочерком. Разница для них не рассчитывается.</span></div>}
   <section className="report" aria-label="Отчёт о выдаче дизельного топлива" aria-busy={loading}><div className="table-toolbar"><div><h2>Выдача топлива</h2><span className="row-count">{loading?'…':rows.length} строк</span>{report&&<span className="period-caption">{humanDate(report.from)}{report.from!==report.to?` — ${humanDate(report.to)}`:''}</span>}</div><span className="unit-label">Объём, л</span></div>
@@ -126,6 +104,7 @@ function App(){
   <dialog ref={dialog} {...backdropEvents(()=>setSelected(null))} aria-label="Детали выдачи топлива" onCancel={event=>{event.preventDefault();setSelected(null);}} onClose={()=>{if(!dialog.current?.open)setSelected(null);}}><div className="dialog-heading"><div><p className="eyebrow">ДЕТАЛИ ВЫДАЧИ ТОПЛИВА</p><h2>{selected?.truck}</h2><p>{selected&&humanDate(selected.date)} · {selected?.farm}</p></div><button className="close" aria-label="Закрыть детализацию" onClick={()=>setSelected(null)}><CloseIcon/></button></div><div className="source-modes" role="group" aria-label="Источник детализации"><button type="button" aria-pressed={detailSource==='comparison'} onClick={()=>setDetailSource('comparison')}>Сверка получателей</button><button type="button" aria-pressed={detailSource==='onec'} onClick={()=>setDetailSource('onec')}>Документы 1С · {selected?.details.length??0}</button><button type="button" aria-pressed={detailSource==='wialon'} onClick={()=>setDetailSource('wialon')}>Выдачи Wialon · {selected?.wialon_details?.length??0}</button></div>
   {detailSource==='comparison'?<RecipientComparisons rows={selected?.recipient_comparisons}/>:detailSource==='onec'?<>{!selected?.details.length&&<p className="document-note">Документов выдачи 1С за этот день нет.</p>}<div className="detail-scroll"><table><thead><tr><th>Документ</th><th>Номер</th><th>Дата документа</th><th>Получатель</th><th className="number">Выдано, л</th><th>Статус</th></tr></thead><tbody>{selected?.details.map((d,i)=>{const status=documentStatus(d);return <tr key={i} className={status==='entered'?'unposted':''}><td>{d.document_type}</td><td className="document-number">{d.document}</td><td className="date-cell">{d.document_date?humanDate(d.document_date):'—'}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td><td><span className={status==='unknown'?'unknown-status':status==='posted'?'posted-status':'pending-status'}>{status==='posted'&&<span aria-hidden="true">✓ </span>}{status==='unknown'?'Статус недоступен':status==='posted'?'Проведён':'Занесён'}</span></td></tr>;})}</tbody></table></div><p className="document-note">Галочка означает проведение в БУ. «Занесён» — документ есть, проведение в БУ не подтверждено. Все выдачи включены в итог строки.</p></>:<>{!selected?.wialon_details?.length&&<p className="document-note">Нет доступных событий Wialon за этот день.</p>}<div className="detail-scroll"><table><thead><tr><th>Начало, МСК</th><th>Конец, МСК</th><th>Карточка получателя Wialon</th><th className="number">Выдано, л</th></tr></thead><tbody>{selected?.wialon_details?.map((d,i)=><tr key={i}><td>{new Date(d.started_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{new Date(d.ended_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td></tr>)}</tbody></table></div><p className="document-note">Показаны все события, включая выдачи без карточки получателя. Они уже учтены в объёме счётчика. Карточка Wialon не является подтверждённым сопоставлением с получателем 1С.</p></>}
   </dialog>
+  <ExportDialog open={exportOpen} from={from} to={to} filters={{mode,farms,source_ids:trucks}} sources={report?.trucks??[]} onClose={()=>setExportOpen(false)} onBusyChange={setExporting}/>
   <MatchingDialog open={mappingOpen} onClose={()=>setMappingOpen(false)} onChanged={()=>void load()}/>
   </>;
 }
