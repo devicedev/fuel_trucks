@@ -50,6 +50,7 @@
 .period-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:10px;border-bottom:1px solid var(--border);background:#f6f8f6}
 .period-modes button{border:1px solid transparent;background:transparent;border-radius:5px;min-height:32px;font-size:11px;color:#45614f;padding:5px 4px}
 .period-modes button[aria-selected=true]{border-color:#b5cebe;background:#e2eee6;color:#1a5239;font-weight:700}
+.period-modes .period-all-time{grid-column:1/-1}
 .period-quick-summary{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 12px;color:#45614f;font-size:12px}.period-quick-summary svg{width:24px;height:24px}.period-quick-summary span{font-size:12px;font-variant-numeric:tabular-nums}
 .period-choice-panel{padding:12px 14px}.period-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.period-options.quarters{grid-template-columns:1fr 1fr}
 .period-options button{min-height:40px;padding:8px 4px;border:1px solid #d8e3dc;border-radius:5px;background:white;color:#355844;font-size:12px;text-transform:capitalize}.period-options button[aria-pressed=true]{border-color:#225647;background:#e2eee6;font-weight:700}.period-options button:hover:not(:disabled){background:#edf4ef}.period-options button:disabled{opacity:.45;cursor:not-allowed}.period-options small{display:block;margin-top:5px;font-size:9px;font-weight:400;line-height:1.5}
