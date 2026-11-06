@@ -9,7 +9,6 @@ import {availableSources, retainAvailable} from './source-filters';
 import type {SourceOption} from './source-filters';
 import {readReportUrl, resolveUrlSources, writeReportUrl} from './report-url';
 import {CloseIcon} from './CloseIcon';
-import {MatchingDialog} from './MatchingDialog';
 import {RecipientComparisons} from './RecipientComparison';
 import type {RecipientComparison} from './RecipientComparison';
 import {documentStatus, enteredDocuments} from './document-status';
@@ -50,7 +49,6 @@ function App(){
   const initialFilters=useRef(readReportUrl(location.search));
   const [farms,setFarms]=useState<string[]>(initialFilters.current.farms);const [trucks,setTrucks]=useState<string[]>(initialFilters.current.sources);
   const [mode,setMode]=useState<'truck'|'warehouse'|'all'>(initialFilters.current.mode);
-  const [mappingOpen,setMappingOpen]=useState(false);
   const [exporting,setExporting]=useState(false);const [exportOpen,setExportOpen]=useState(false);
   const [report,setReport]=useState<Report|null>(null);const [loading,setLoading]=useState(false);const [error,setError]=useState('');const [selected,setSelected]=useState<Row|null>(null);
   const [detailSource,setDetailSource]=useState<'onec'|'wialon'|'comparison'>('comparison');
@@ -86,7 +84,6 @@ function App(){
   <div className="source-modes" role="group" aria-label="Тип источника выдачи">
     {([['all','Все'],['truck','Бензовозы'],['warehouse','Склады / АЗС']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>{setMode(value);setTrucks([]);}}>{label}</button>)}
     <span>{mode==='warehouse'?'Выдача со складов по данным 1С':mode==='all'?'Бензовозы и стационарные источники выдачи':'Сверка выдачи бензовозов с Wialon'}</span>
-    <button type="button" className="mapping-button" onClick={()=>setMappingOpen(true)}>Сопоставление</button>
   </div>
   {error&&<div className="error" role="alert"><strong>Не удалось загрузить данные</strong><p>{error}</p><button onClick={()=>void load()}>Повторить</button></div>}
   {!!report?.errors.length&&<div className="warning" role="alert"><strong>Отчёт загружен частично</strong><p>{report.errors.join(' ')}</p><span>Недоступные значения отмечены прочерком. Разница для них не рассчитывается.</span></div>}
@@ -105,7 +102,6 @@ function App(){
   {detailSource==='comparison'?<RecipientComparisons rows={selected?.recipient_comparisons}/>:detailSource==='onec'?<>{!selected?.details.length&&<p className="document-note">Документов выдачи 1С за этот день нет.</p>}<div className="detail-scroll"><table><thead><tr><th>Документ</th><th>Номер</th><th>Дата документа</th><th>Получатель</th><th className="number">Выдано, л</th><th>Статус</th></tr></thead><tbody>{selected?.details.map((d,i)=>{const status=documentStatus(d);return <tr key={i} className={status==='entered'?'unposted':''}><td>{d.document_type}</td><td className="document-number">{d.document}</td><td className="date-cell">{d.document_date?humanDate(d.document_date):'—'}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td><td><span className={status==='unknown'?'unknown-status':status==='posted'?'posted-status':'pending-status'}>{status==='posted'&&<span aria-hidden="true">✓ </span>}{status==='unknown'?'Статус недоступен':status==='posted'?'Проведён':'Занесён'}</span></td></tr>;})}</tbody></table></div><p className="document-note">Галочка означает проведение в БУ. «Занесён» — документ есть, проведение в БУ не подтверждено. Все выдачи включены в итог строки.</p></>:<>{!selected?.wialon_details?.length&&<p className="document-note">Нет доступных событий Wialon за этот день.</p>}<div className="detail-scroll"><table><thead><tr><th>Начало, МСК</th><th>Конец, МСК</th><th>Карточка получателя Wialon</th><th className="number">Выдано, л</th></tr></thead><tbody>{selected?.wialon_details?.map((d,i)=><tr key={i}><td>{new Date(d.started_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{new Date(d.ended_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td></tr>)}</tbody></table></div><p className="document-note">Показаны все события, включая выдачи без карточки получателя. Они уже учтены в объёме счётчика. Карточка Wialon не является подтверждённым сопоставлением с получателем 1С.</p></>}
   </dialog>
   <ExportDialog open={exportOpen} from={from} to={to} filters={{mode,farms,source_ids:trucks}} sources={report?.trucks??[]} onClose={()=>setExportOpen(false)} onBusyChange={setExporting}/>
-  <MatchingDialog open={mappingOpen} onClose={()=>setMappingOpen(false)} onChanged={()=>void load()}/>
   </>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);

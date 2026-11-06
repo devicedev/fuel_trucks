@@ -1,3 +1,4 @@
+import './recipient-comparison.css';
 export type RecipientComparison={id:string;recipient_id:string|null;recipient:string;status:string;onec_names:string[];wialon_names:string[];onec_liters:string|null;wialon_liters:string|null;difference:string|null;onec_count:number;wialon_count:number;automatic_count?:number;automatic_reasons?:string[];unmatched_reasons?:string[]};
 const formatter=new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
 const liters=(value:string|null)=>value===null?'—':formatter.format(Number(value));
