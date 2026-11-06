@@ -9,15 +9,12 @@ import {availableSources, retainAvailable} from './source-filters';
 import type {SourceOption} from './source-filters';
 import {readReportUrl, resolveUrlSources, writeReportUrl} from './report-url';
 import {CloseIcon} from './CloseIcon';
-import {MatchingDialog} from './MatchingDialog';
-import {EventAssignmentEditor} from './EventAssignmentEditor';
-import type {WialonIssue} from './EventAssignmentEditor';
 import {RecipientComparisons} from './RecipientComparison';
 import type {RecipientComparison} from './RecipientComparison';
 import {documentStatus, enteredDocuments} from './document-status';
 
 type Detail={document:string;document_type:string;document_date:string|null;recipient:string;liters:string;posted:boolean|null};
-type WialonDetail=WialonIssue;
+type WialonDetail={started_at:string;ended_at:string;recipient:string;liters:string};
 type Row={recipient_comparisons?:RecipientComparison[];wialon_details:WialonDetail[];id:string;date:string;farm:string;farms:string[];truck_id:string;truck:string;source_kind:'truck'|'warehouse';count:number|null;meter_liters:string|null;onec_liters:string|null;difference:string|null;unposted_count:number;unposted_liters:string;documents:string[];details:Detail[];supplier_names:string[];mapped:boolean;ambiguous_farm:boolean};
 type Report={rows:Row[];errors:string[];from:string;to:string;loaded_at:string;sources:{onec:boolean;wialon:boolean};farms:string[];trucks:SourceOption[]};
 const formatter=new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -52,19 +49,17 @@ function App(){
   const initialFilters=useRef(readReportUrl(location.search));
   const [farms,setFarms]=useState<string[]>(initialFilters.current.farms);const [trucks,setTrucks]=useState<string[]>(initialFilters.current.sources);
   const [mode,setMode]=useState<'truck'|'warehouse'|'all'>(initialFilters.current.mode);
-  const [mappingOpen,setMappingOpen]=useState(false);
   const [exporting,setExporting]=useState(false);const [exportOpen,setExportOpen]=useState(false);
   const [report,setReport]=useState<Report|null>(null);const [loading,setLoading]=useState(false);const [error,setError]=useState('');const [selected,setSelected]=useState<Row|null>(null);
-  const [assignIndex,setAssignIndex]=useState<number|null>(null);
   const [detailSource,setDetailSource]=useState<'onec'|'wialon'|'comparison'>('comparison');
-  const showDetails=(row:Row)=>{setAssignIndex(null);setDetailSource('comparison');setSelected(row);};
+  const showDetails=(row:Row)=>{setDetailSource('comparison');setSelected(row);};
   const active=useRef<AbortController|null>(null);const sequence=useRef(0);const dialog=useRef<HTMLDialogElement>(null);
-  async function load(queryFrom=from,queryTo=to,propagate=false){
+  async function load(queryFrom=from,queryTo=to){
     const validation=periodError(queryFrom,queryTo);if(validation){setError(validation);return;}
     active.current?.abort();const controller=new AbortController();active.current=controller;const id=++sequence.current;
     setLoading(true);setError('');setReport(null);
     try{const response=await fetch(`/api/fuel-trucks/v1/report?${new URLSearchParams({from:queryFrom,to:queryTo})}`,{signal:controller.signal,cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.message||'Не удалось загрузить отчёт');if(id===sequence.current){setReport(data);setSelected(previous=>previous?data.rows.find((row:Row)=>row.id===previous.id)??null:null);setTrucks(previous=>resolveUrlSources(previous,data.trucks));}}
-    catch(e){if(propagate)throw new Error('Назначение сохранено, но отчёт не обновился. Закройте окно и обновите страницу.');if(id===sequence.current&&!(e instanceof DOMException&&e.name==='AbortError'))setError(e instanceof Error?e.message:'Ошибка соединения');}
+    catch(e){if(id===sequence.current&&!(e instanceof DOMException&&e.name==='AbortError'))setError(e instanceof Error?e.message:'Ошибка соединения');}
     finally{if(id===sequence.current)setLoading(false);}
   }
   useEffect(()=>{void load();return()=>active.current?.abort();},[]);
@@ -89,7 +84,6 @@ function App(){
   <div className="source-modes" role="group" aria-label="Тип источника выдачи">
     {([['all','Все'],['truck','Бензовозы'],['warehouse','Склады / АЗС']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>{setMode(value);setTrucks([]);}}>{label}</button>)}
     <span>{mode==='warehouse'?'Выдача со складов по данным 1С':mode==='all'?'Бензовозы и стационарные источники выдачи':'Сверка выдачи бензовозов с Wialon'}</span>
-    <button type="button" className="mapping-button" onClick={()=>setMappingOpen(true)}>Сопоставление</button>
   </div>
   {error&&<div className="error" role="alert"><strong>Не удалось загрузить данные</strong><p>{error}</p><button onClick={()=>void load()}>Повторить</button></div>}
   {!!report?.errors.length&&<div className="warning" role="alert"><strong>Отчёт загружен частично</strong><p>{report.errors.join(' ')}</p><span>Недоступные значения отмечены прочерком. Разница для них не рассчитывается.</span></div>}
@@ -105,10 +99,9 @@ function App(){
 
   </main>
   <dialog ref={dialog} {...backdropEvents(()=>setSelected(null))} aria-label="Детали выдачи топлива" onCancel={event=>{event.preventDefault();setSelected(null);}} onClose={()=>{if(!dialog.current?.open)setSelected(null);}}><div className="dialog-heading"><div><p className="eyebrow">ДЕТАЛИ ВЫДАЧИ ТОПЛИВА</p><h2>{selected?.truck}</h2><p>{selected&&humanDate(selected.date)} · {selected?.farm}</p></div><button className="close" aria-label="Закрыть детализацию" onClick={()=>setSelected(null)}><CloseIcon/></button></div><div className="source-modes" role="group" aria-label="Источник детализации"><button type="button" aria-pressed={detailSource==='comparison'} onClick={()=>setDetailSource('comparison')}>Сверка получателей</button><button type="button" aria-pressed={detailSource==='onec'} onClick={()=>setDetailSource('onec')}>Документы 1С · {selected?.details.length??0}</button><button type="button" aria-pressed={detailSource==='wialon'} onClick={()=>setDetailSource('wialon')}>Выдачи Wialon · {selected?.wialon_details?.length??0}</button></div>
-  {detailSource==='comparison'?<><RecipientComparisons rows={selected?.recipient_comparisons} events={selected?.wialon_details} onAssign={setAssignIndex}/>{assignIndex!==null&&selected?.wialon_details[assignIndex]&&<EventAssignmentEditor key={`${selected.id}:${assignIndex}`} event={selected.wialon_details[assignIndex]} sourceId={Number(selected.truck_id.slice(2))} onClose={()=>setAssignIndex(null)} onChanged={()=>load(from,to,true)}/>}</>:detailSource==='onec'?<>{!selected?.details.length&&<p className="document-note">Документов выдачи 1С за этот день нет.</p>}<div className="detail-scroll"><table><thead><tr><th>Документ</th><th>Номер</th><th>Дата документа</th><th>Получатель</th><th className="number">Выдано, л</th><th>Статус</th></tr></thead><tbody>{selected?.details.map((d,i)=>{const status=documentStatus(d);return <tr key={i} className={status==='entered'?'unposted':''}><td>{d.document_type}</td><td className="document-number">{d.document}</td><td className="date-cell">{d.document_date?humanDate(d.document_date):'—'}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td><td><span className={status==='unknown'?'unknown-status':status==='posted'?'posted-status':'pending-status'}>{status==='posted'&&<span aria-hidden="true">✓ </span>}{status==='unknown'?'Статус недоступен':status==='posted'?'Проведён':'Занесён'}</span></td></tr>;})}</tbody></table></div><p className="document-note">Галочка означает проведение в БУ. «Занесён» — документ есть, проведение в БУ не подтверждено. Все выдачи включены в итог строки.</p></>:<>{!selected?.wialon_details?.length&&<p className="document-note">Нет доступных событий Wialon за этот день.</p>}<div className="detail-scroll"><table><thead><tr><th>Начало, МСК</th><th>Конец, МСК</th><th>Карточка получателя Wialon</th><th className="number">Выдано, л</th></tr></thead><tbody>{selected?.wialon_details?.map((d,i)=><tr key={i}><td>{new Date(d.started_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{new Date(d.ended_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td></tr>)}</tbody></table></div><p className="document-note">Показаны все события, включая выдачи без карточки получателя. Они уже учтены в объёме счётчика. Карточка Wialon не является подтверждённым сопоставлением с получателем 1С.</p></>}
+  {detailSource==='comparison'?<RecipientComparisons rows={selected?.recipient_comparisons}/>:detailSource==='onec'?<>{!selected?.details.length&&<p className="document-note">Документов выдачи 1С за этот день нет.</p>}<div className="detail-scroll"><table><thead><tr><th>Документ</th><th>Номер</th><th>Дата документа</th><th>Получатель</th><th className="number">Выдано, л</th><th>Статус</th></tr></thead><tbody>{selected?.details.map((d,i)=>{const status=documentStatus(d);return <tr key={i} className={status==='entered'?'unposted':''}><td>{d.document_type}</td><td className="document-number">{d.document}</td><td className="date-cell">{d.document_date?humanDate(d.document_date):'—'}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td><td><span className={status==='unknown'?'unknown-status':status==='posted'?'posted-status':'pending-status'}>{status==='posted'&&<span aria-hidden="true">✓ </span>}{status==='unknown'?'Статус недоступен':status==='posted'?'Проведён':'Занесён'}</span></td></tr>;})}</tbody></table></div><p className="document-note">Галочка означает проведение в БУ. «Занесён» — документ есть, проведение в БУ не подтверждено. Все выдачи включены в итог строки.</p></>:<>{!selected?.wialon_details?.length&&<p className="document-note">Нет доступных событий Wialon за этот день.</p>}<div className="detail-scroll"><table><thead><tr><th>Начало, МСК</th><th>Конец, МСК</th><th>Карточка получателя Wialon</th><th className="number">Выдано, л</th></tr></thead><tbody>{selected?.wialon_details?.map((d,i)=><tr key={i}><td>{new Date(d.started_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{new Date(d.ended_at).toLocaleTimeString('ru-RU',{timeZone:'Europe/Moscow'})}</td><td>{d.recipient}</td><td className="number">{liters(d.liters)}</td></tr>)}</tbody></table></div><p className="document-note">Показаны все события, включая выдачи без карточки получателя. Они уже учтены в объёме счётчика. Карточка Wialon не является подтверждённым сопоставлением с получателем 1С.</p></>}
   </dialog>
   <ExportDialog open={exportOpen} from={from} to={to} filters={{mode,farms,source_ids:trucks}} sources={report?.trucks??[]} onClose={()=>setExportOpen(false)} onBusyChange={setExporting}/>
-  <MatchingDialog open={mappingOpen} onClose={()=>setMappingOpen(false)} onChanged={()=>void load()}/>
   </>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);
