@@ -21,7 +21,7 @@ async function api(path:string,options?:RequestInit){
   return data;
 }
 
-function Picker({label,options,value,onChange}:{label:string;options:{id:string;name:string;description?:string}[];value:string;onChange:(id:string)=>void}){
+export function Picker({label,options,value,onChange}:{label:string;options:{id:string;name:string;description?:string}[];value:string;onChange:(id:string)=>void}){
   const [query,setQuery]=useState('');const [open,setOpen]=useState(false);const [highlight,setHighlight]=useState(0);const root=useRef<HTMLDivElement>(null);const listId=useId();
   const chosen=options.find(option=>option.id===value);
   const filtered=options.filter(option=>searchKey(option.name+' '+(option.description||'')).includes(searchKey(query))).slice(0,40);
